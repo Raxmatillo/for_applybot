@@ -8,9 +8,12 @@ from utils.set_bot_commands import set_default_commands
 
 async def on_startup(dispatcher):
     await db.create()
-    # await db.create_table_status()
-    # await db.create_table_ticket()
-    # await db.create_table_faculty()
+    await db.create_table_user()
+    await db.create_table_ticket_type()
+    await db.create_table_status()
+    await db.create_table_ticket()
+    await db.create_table_faculty()
+
 
 
     # Birlamchi komandalar (/star va /help)
