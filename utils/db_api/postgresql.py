@@ -41,9 +41,9 @@ class Database:
     async def create_table_status(self):
         sql = """
         CREATE TABLE IF NOT EXISTS status (
-        id SERIAL PRIMARY KEY,
-        situation_en VARCHAR(50) NOT NULL,
-        situation_uz VARCHAR(50) NOT NULL
+            id SERIAL PRIMARY KEY,
+            situation_en VARCHAR(50) NOT NULL,
+            situation_uz VARCHAR(50) NOT NULL
         );
         """
         await self.execute(sql, execute=True)
@@ -51,8 +51,8 @@ class Database:
     async def create_table_faculty(self):
         sql = """
         CREATE TABLE IF NOT EXISTS faculty (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(200) NOT NULL
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(200) NOT NULL
         );
         """
         await self.execute(sql, execute=True)
@@ -60,8 +60,8 @@ class Database:
     async def create_table_ticket_type(self):
         sql = """
         CREATE TABLE IF NOT EXISTS ticket_type (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(200) NOT NULL
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(200) NOT NULL
         );
         """
         await self.execute(sql, execute=True)
@@ -69,27 +69,28 @@ class Database:
     async def create_table_user(self):
         sql = """
         CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        full_name VARCHAR(255) NOT NULL,
-        group_number VARCHAR(20) NOT NULL,
-        phone_number VARCHAR(15) NOT NULL,
-        faculty INTEGER REFERENCES faculty(id),
-        telegram_id BIGINT NOT NULL UNIQUE,
-        created_at TIMESTAMP NOT NULL
+            id SERIAL PRIMARY KEY,
+            full_name VARCHAR(255) NOT NULL,
+            group_number VARCHAR(20) NOT NULL,
+            phone_number VARCHAR(15) NOT NULL,
+            faculty INTEGER REFERENCES faculty(id),
+            telegram_id BIGINT NOT NULL UNIQUE,
+            created_at TIMESTAMP NOT NULL
         );
         """
         await self.execute(sql, execute=True)
+
     async def create_table_ticket(self):
         sql = """
         CREATE TABLE IF NOT EXISTS ticket (
-        id BIGINT UNIQUE NOT NULL,
-        status INTEGER REFERENCES status(id) DEFAULT 1,
-        file VARCHAR(300) NULL,
-        text TEXT NULL,
-        paynet NUMERIC(12, 3) NULL,
-        created_at TIMESTAMP NOT NULL,
-        tickey_type INTEGER REFERENCES ticket_type(id),
-        "user" INTEGER REFERENCES users(id)
+            id BIGINT UNIQUE NOT NULL,
+            status INTEGER REFERENCES status(id) DEFAULT 1,
+            file VARCHAR(300) NULL,
+            text TEXT NULL,
+            paynet NUMERIC(12, 3) NULL,
+            created_at TIMESTAMP NOT NULL,
+            tickey_type INTEGER REFERENCES ticket_type(id),
+            user_id INTEGER REFERENCES users(id)
         );
         """
         await self.execute(sql, execute=True)
@@ -102,6 +103,30 @@ class Database:
         ])
         return sql, tuple(parameters.values())
 
+
+    """ STATUS TABLE """
+    async def prepare_status(self):
+        sql = """
+        INSERT INTO status (situation_en, situation_uz)
+        VALUES
+            ('new', 'Yangi'),
+            ('waiting', 'Kutilmoqda'),
+            ('confirmed', 'Tasdiqlangan');
+        """
+        await self.execute(sql, fetch=True)
+
+
+    """ FACUTY TABLE """
+    async def prepare_faculty(self):
+        sql = """
+        INSERT INTO faculty (name) 
+        VALUES
+            ('Filologiya'), ('Matematika-informatika'), ('Tarix'),
+            ('Chet tillari'), ('Harbiy talim'), ('Jismoniy madaniyat'), ('Iqtisodiyot'), 
+            ('Pedagogika psixologiya'), ('Tabiiy fanlar'), ('Sanatshunoslik'), ('Fizika-texnika'), 
+            ('Ingliz tili va adabiyoti'), ('Sirtqi bolim'), ('Agrar qoshma');
+        """
+        await self.execute(sql, fetch=True)
 
 
     """ USER TABLE"""
