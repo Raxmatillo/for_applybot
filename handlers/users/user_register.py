@@ -12,24 +12,12 @@ from states.TicketState import User
 @dp.message_handler(text="🌐 Ro'yxatdan o'tish")
 async def start_ticket(message: types.Message):
     users = await db.get_all_users()
-    # print(users, type(users["telegram_id"]))
-    # print(users[0]["telegram_id"])
-    # if message.from_user.id in users[0]["telegram_id"]:
-    #     await message.answer("Siz allaqachon ro'yxatdan o'tgansiz!")
-    #     return
     markup = await faculty_keyboards()
     await message.answer(
         text="Quyidagi menu orqali fakultetingizni tanlang",
         parse_mode='html', reply_markup=markup)
     await User.faculty.set()
 
-
-@dp.message_handler(state=User.faculty)
-async def unknown_get__faculty(message: types.Message):
-    await message.edit_reply_markup()
-    markup = await faculty_keyboards()
-    await message.answer("Iltimos fakultetingizni tanlang", reply_markup=markup)
-    await User.faculty.set()
 
 
 @dp.callback_query_handler(faculty_cd.filter(), state=User.faculty)
@@ -48,8 +36,18 @@ async def get__faculty(call: types.CallbackQuery, state: FSMContext,
     await User.group_number.set()
 
 
-@dp.message_handler(state=User.group_number)
+@dp.message_handler(state=User.faculty, content_types='any')
+async def unknown_get__faculty(message: types.Message):
+    await message.answer("❗️ Iltimos fakultetingizni tanlang")
+    await User.faculty.set()
+
+
+
+@dp.message_handler(state=User.group_number, content_types='text')
 async def get__group_number(message: types.Message, state: FSMContext):
+    if len(message.text) > 20:
+        await message.answer("Maksimal 20 ta belgidan iborat gurux raqam uyuqoring")
+        return
     await state.update_data(group_number = message.text)
     await message.answer(
         text="To'liq ism familyangizni kiriting\nNamuna: " \
@@ -57,9 +55,17 @@ async def get__group_number(message: types.Message, state: FSMContext):
         parse_mode = 'html', reply_markup = types.ReplyKeyboardRemove())
     await User.full_name.set()
 
+@dp.message_handler(state=User.group_number, content_types='any')
+async def unknown_get__group_number(message: types.Message, state: FSMContext):
+    await message.answer("❗️ Iltimos, matn sifatida yuboring")
+
+
 
 @dp.message_handler(state=User.full_name)
 async def get__full_name(message: types.Message, state: FSMContext):
+    if len(message.text) > 255:
+        await message.answer("Kiritilgan belgilar soni 255 tadan oshmasin!")
+        return
     await state.update_data(full_name = message.text)
     await state.update_data(user_id = message.from_user.id)
     await message.answer(
@@ -67,9 +73,16 @@ async def get__full_name(message: types.Message, state: FSMContext):
         parse_mode='html')
     await User.phone_number.set()
 
+@dp.message_handler(state=User.full_name, content_types='any')
+async def unknown_get__full_name(message: types.Message, state: FSMContext):
+    await message.answer("❗️ Iltimos, matn sifatida yuboring")
+
 
 @dp.message_handler(state=User.phone_number)
 async def get__phone_number(message: types.Message, state: FSMContext):
+    if len(message.text) > 15:
+        await message.answer("Kiritilgan telefon raqami 15 ta belgidan oshmasin")
+        return
     await state.update_data(phone_number = message.text)
     async with state.proxy() as data:
         full_name = data.get("full_name")
@@ -95,6 +108,10 @@ async def get__phone_number(message: types.Message, state: FSMContext):
         await message.answer("Foydalanuvchini ro'yxatda olishda xatolik")
     finally:
         await state.finish()
+
+@dp.message_handler(state=User.phone_number, content_types='any')
+async def unknown_get__phone_number(message: types.Message, state: FSMContext):
+    await message.answer("❗️ Iltimos, matn sifatida yuboring")
 
 
 

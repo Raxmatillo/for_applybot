@@ -7,7 +7,7 @@ class User(StatesGroup):
     phone_number = State()
 
 class Ticket(StatesGroup):
-    tickey_type = State()
+    ticket_type = State()
     file = State()
     text = State()
     confirm = State()
