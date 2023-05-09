@@ -6,6 +6,7 @@ from asyncpg.pool import Pool
 
 from data import config
 
+
 class Database:
 
     def __init__(self):
@@ -72,7 +73,7 @@ class Database:
             id SERIAL PRIMARY KEY,
             full_name VARCHAR(255) NOT NULL,
             group_number VARCHAR(20) NOT NULL,
-            phone_number VARCHAR(15) NOT NULL,
+            phone_number VARCHAR(20) NOT NULL,
             faculty INTEGER REFERENCES faculty(id),
             telegram_id BIGINT NOT NULL UNIQUE,
             created_at TIMESTAMP NOT NULL
@@ -84,12 +85,12 @@ class Database:
         sql = """
         CREATE TABLE IF NOT EXISTS ticket (
             id BIGINT UNIQUE NOT NULL,
-            status INTEGER REFERENCES status(id) DEFAULT 1,
+            status VARCHAR(50) DEFAULT 'new',
             file VARCHAR(300) NULL,
             text TEXT NULL,
             paynet NUMERIC(12, 3) NULL,
             created_at TIMESTAMP NOT NULL,
-            tickey_type INTEGER REFERENCES ticket_type(id),
+            ticket_id INTEGER REFERENCES ticket_type(id),
             user_id INTEGER REFERENCES users(id)
         );
         """
@@ -103,8 +104,8 @@ class Database:
         ])
         return sql, tuple(parameters.values())
 
-
     """ STATUS TABLE """
+
     async def prepare_status(self):
         sql = """
         INSERT INTO status (situation_en, situation_uz)
@@ -115,8 +116,8 @@ class Database:
         """
         await self.execute(sql, fetch=True)
 
-
     """ FACUTY TABLE """
+
     async def prepare_faculty(self):
         sql = """
         INSERT INTO faculty (name) 
@@ -128,8 +129,11 @@ class Database:
         """
         await self.execute(sql, fetch=True)
 
+    async def drop_faculty(self):
+        await self.execute("DELETE FROM faculty WHERE TRUE;", execute=True)
 
     """ USER TABLE"""
+
     async def add_user(
             self,
             full_name: str,
@@ -148,7 +152,6 @@ class Database:
                                   phone_number, telegram_id, created_at,
                                   fetchrow=True)
 
-
     async def get_user(self, telegram_id):
         sql = f"""
         SELECT * FROM users WHERE telegram_id={telegram_id}
@@ -165,39 +168,39 @@ class Database:
         """
         return await self.execute(sql, fetchrow=True)
 
-
-
-
-
     """ TICKET TYPE TABLE """
+
     async def get_all_tickets(self):
         return await self.execute("SELECT * FROM ticket_type;", fetch=True)
 
-
-
     """ TICKET TABLE """
+
     async def add_ticket(
             self,
             id: int,
-            file: str,
             text: str,
             created_at: date,
-            ticket_type: int,
-            user_id: int
+            ticket_id: int,
+            user_id: int,
+            status: str = 'new',
+            file: str = None,
+            paynet: float = 0,
     ):
         sql = """
         INSERT INTO ticket 
-            (id, file, text, created_at, ticket_type, user_id) 
+            (id, text, created_at, ticket_id, user_id, status, file, paynet) 
         VALUES
-            ($1, $2, $3, $4, $5, $6) returning *"""
+            ($1, $2, $3, $4, $5, $6, $7, $8) returning *"""
         return await self.execute(
             sql,
             id,
-            file,
             text,
             created_at,
-            ticket_type,
+            ticket_id,
             user_id,
+            status,
+            file,
+            paynet,
             fetchrow=True
         )
 
@@ -205,16 +208,15 @@ class Database:
         sql = "SELECT * FROM ticket"
         return await self.execute(sql, fetch=True)
 
-    async def get_ticket_full_data(self, ticket_type: int):
+    async def get_ticket_full_data(self, ticket_id: int):
         sql = f"""
-        SELECT * FROM ticket INNER JOIN ticket_type ON ticket.ticket_type=ticket_type.id WHERE ticket_type={ticket_type};
+        SELECT * FROM ticket INNER JOIN ticket_type ON ticket.ticket_id=ticket_type.id WHERE ticket_id={ticket_id};
         """
         return await self.execute(sql, fetchrow=True)
 
-    async def get_ticket(self, **kwargs):
-        sql = "SELECT * FROM ticket WHERE "
-        sql, parameters = self.format_args(sql, parameters=kwargs)
-        return await self.execute(sql, *parameters, fetchrow=True)
+    async def get_ticket(self, user_id: int):
+        sql = f"SELECT * FROM ticket WHERE user_id={user_id} ORDER BY created_at DESC;"
+        return await self.execute(sql, fetchrow=True)
 
     async def count_ticket(self):
         sql = "SELECT COUNT(*) FROM ticket"
@@ -235,5 +237,3 @@ class Database:
     async def get_faculty(self, faculty_name):
         sql = f"SELECT * FROM faculty WHERE name = '{faculty_name}'"
         return await self.execute(sql, fetchrow=True)
-
-

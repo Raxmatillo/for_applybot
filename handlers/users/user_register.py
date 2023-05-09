@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from keyboards.default.menu_keyboards import menu
+from keyboards.default.menu_keyboards import menu, registration_keyboard
 from keyboards.inline.dashboard_keyboards import faculty_keyboards, faculty_cd
 from loader import dp, db
 from states.TicketState import User
@@ -14,7 +14,7 @@ async def start_ticket(message: types.Message):
     users = await db.get_all_users()
     markup = await faculty_keyboards()
     await message.answer(
-        text="Quyidagi menu orqali fakultetingizni tanlang",
+        text="🔍 Fakultetingizni tanlang",
         parse_mode='html', reply_markup=markup)
     await User.faculty.set()
 
@@ -31,14 +31,14 @@ async def get__faculty(call: types.CallbackQuery, state: FSMContext,
 
     await call.message.edit_reply_markup()
     await call.message.answer(
-        "Gurux raqamingizni kiriting\nNamuna: <i>20.08</i>",
+        "🖊 Guruh raqamingizni kiriting.\n\nNamuna: <i>20.07</i>",
         parse_mode='html', reply_markup=types.ReplyKeyboardRemove())
     await User.group_number.set()
 
 
 @dp.message_handler(state=User.faculty, content_types='any')
 async def unknown_get__faculty(message: types.Message):
-    await message.answer("❗️ Iltimos fakultetingizni tanlang")
+    await message.answer("❗️ Iltimos, fakultetingizni tanlang")
     await User.faculty.set()
 
 
@@ -46,12 +46,12 @@ async def unknown_get__faculty(message: types.Message):
 @dp.message_handler(state=User.group_number, content_types='text')
 async def get__group_number(message: types.Message, state: FSMContext):
     if len(message.text) > 20:
-        await message.answer("Maksimal 20 ta belgidan iborat gurux raqam uyuqoring")
+        await message.answer("❗️ Maksimal 20 ta belgidan iborat gurux raqam uyuqoring")
         return
     await state.update_data(group_number = message.text)
     await message.answer(
-        text="To'liq ism familyangizni kiriting\nNamuna: " \
-        "<i>Anvarov Anvar Anvarjon o'g'li</i>",
+        text="🖊 To'liq ism familyangizni kiriting.\n\nNamuna: "
+             "<i>Anvarov Anvar Anvarjon o'g'li</i>",
         parse_mode = 'html', reply_markup = types.ReplyKeyboardRemove())
     await User.full_name.set()
 
@@ -64,12 +64,12 @@ async def unknown_get__group_number(message: types.Message, state: FSMContext):
 @dp.message_handler(state=User.full_name)
 async def get__full_name(message: types.Message, state: FSMContext):
     if len(message.text) > 255:
-        await message.answer("Kiritilgan belgilar soni 255 tadan oshmasin!")
+        await message.answer("❗️ Kiritilgan belgilar soni 255 tadan oshmasin!")
         return
     await state.update_data(full_name = message.text)
     await state.update_data(user_id = message.from_user.id)
     await message.answer(
-        text="Siz bilan bog'lanishimiz uchun telefon raqamingizni kiriting",
+        text="📞 Siz bilan bog'lanishimiz uchun telefon raqamingizni kiriting. \n\nNamuna: <i>+99890 123 45 67</i>",
         parse_mode='html')
     await User.phone_number.set()
 
@@ -81,7 +81,7 @@ async def unknown_get__full_name(message: types.Message, state: FSMContext):
 @dp.message_handler(state=User.phone_number)
 async def get__phone_number(message: types.Message, state: FSMContext):
     if len(message.text) > 15:
-        await message.answer("Kiritilgan telefon raqami 15 ta belgidan oshmasin")
+        await message.answer("❗️ Kiritilgan telefon raqami 15 ta belgidan oshmasin")
         return
     await state.update_data(phone_number = message.text)
     async with state.proxy() as data:
@@ -99,13 +99,13 @@ async def get__phone_number(message: types.Message, state: FSMContext):
             telegram_id=telegram_id,
             created_at=datetime.now()
         )
-        await message.answer("Muvaffaqiyatli ro'yxatdan o'tdingiz")
-        await message.answer("Quyidagi menyulardan birini tanlang",
+        await message.answer("✅ Muvaffaqiyatli ro'yxatdan o'tdingiz.")
+        await message.answer("⬇️ Quyidagi menyulardan birini tanlang",
                              reply_markup=menu)
     except Exception as err:
         print(err)
         print("Foydalanuvchini ro'yxatda olishda xatolik")
-        await message.answer("Foydalanuvchini ro'yxatda olishda xatolik")
+        await message.answer("❗️ Ro'yxatdan o'tish xatolik.\n\nQayta urinib ko'ring!", reply_markup=registration_keyboard)
     finally:
         await state.finish()
 
